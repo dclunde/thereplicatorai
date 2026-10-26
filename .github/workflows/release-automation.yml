@@ -1,0 +1,38 @@
+name: Release Automation
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  publish-release:
+    name: Build & Package Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build Frontend Distribution
+        working-directory: src/web/frontend
+        run: |
+          npm ci || npm install
+          npm run build
+
+      - name: Create Release Zip Package
+        run: |
+          zip -r text_to_printer_${{ github.ref_name }}.zip src/ inputs/ scripts/ start.bat start.sh pyproject.toml uv.lock .env.example README.md antigravity_files/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: text_to_printer_${{ github.ref_name }}.zip
+          generate_release_notes: true

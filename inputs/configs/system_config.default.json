@@ -1,0 +1,25 @@
+{
+  "_comment": "This file is auto-copied from system_config.default.json on first run and is git-ignored. Edit freely for your machine without worrying about pushing changes to Git.",
+  "openscad_paths": [
+    "C:\\Program Files\\OpenSCAD\\openscad.exe",
+    "C:\\Program Files (x86)\\OpenSCAD\\openscad.exe",
+    "%LOCALAPPDATA%\\Programs\\OpenSCAD-Nightly\\openscad.exe"
+  ],
+  "slicer_paths": [
+    "C:\\Program Files\\OrcaSlicer\\orca-slicer.exe",
+    "C:\\Program Files (x86)\\OrcaSlicer\\orca-slicer.exe",
+    "C:\\Program Files\\Bambu Studio\\bambu-studio.exe",
+    "C:\\Program Files (x86)\\Bambu Studio\\bambu-studio.exe"
+  ],
+  "bambu_studio_paths": [
+    "C:\\Program Files\\Bambu Studio\\bambu-studio.exe",
+    "C:\\Program Files (x86)\\Bambu Studio\\bambu-studio.exe",
+    "C:\\Program Files\\OrcaSlicer\\orca-slicer.exe",
+    "C:\\Program Files (x86)\\OrcaSlicer\\orca-slicer.exe"
+  ],
+  "prusa_slicer_paths": [
+    "C:\\Program Files\\Prusa3D\\PrusaSlicer\\prusa-slicer-console.exe",
+    "C:\\Program Files (x86)\\Prusa3D\\PrusaSlicer\\prusa-slicer-console.exe"
+  ],
+  "browser": "default"
+}

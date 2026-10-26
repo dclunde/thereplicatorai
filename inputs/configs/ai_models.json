@@ -1,0 +1,11 @@
+{
+  "active_provider": "gemini",
+  "models": {
+    "gemini": "gemini-4-argon",
+    "chatgpt": "gpt-6-astra",
+    "claude": "claude-fable-5-1"
+  },
+  "reasoning_effort": {
+    "chatgpt": "high"
+  }
+}

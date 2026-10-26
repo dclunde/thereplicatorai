@@ -1,0 +1,51 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  frontend-test:
+    name: Frontend Lint & Vitest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'src/web/frontend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: src/web/frontend
+        run: |
+          npm ci || npm install
+
+      - name: Run ESLint
+        working-directory: src/web/frontend
+        run: |
+          npm run lint
+
+      - name: Run Vitest
+        working-directory: src/web/frontend
+        run: |
+          npm run test
+
+      - name: Install Playwright Chromium
+        working-directory: src/web/frontend
+        run: |
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright Mocked E2E Tests
+        working-directory: src/web/frontend
+        env:
+          PLAYWRIGHT_MOCKED_ONLY: '1'
+        run: |
+          npx playwright test e2e/app_mocked.spec.js
+
+

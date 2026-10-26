@@ -1,0 +1,46 @@
+# ==============================================================================
+# 1. Secrets & Local Machine Overrides (NEVER PUSH)
+# ==============================================================================
+.env
+api_keys.txt
+inputs/configs/system_config.json
+inputs/configs/*.local.json
+inputs/google_tasks_api.json
+inputs/google_tasks_token.json
+
+# ==============================================================================
+# 2. All Runtime Outputs, Generated Models, Logs, Snapshots & Caches
+# ==============================================================================
+/outputs/
+/created_stls/
+
+# ==============================================================================
+# 3. Environments, Dependencies & Build Caches
+# ==============================================================================
+.venv/
+.node_env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+node_modules/
+src/web/frontend/node_modules/
+src/web/frontend/dist/
+src/web/frontend/test-results/
+
+# ==============================================================================
+# 4. Stray Slicer / Media Artifacts
+# ==============================================================================
+*.log
+0000*.log
+*.xml
+slice_info.xml
+help.txt
+*.jpg
+*.png
+*.webp
+rtsps_snapshot.jpg
+temp_input.scad
+temp_filename.txt
+temp_colors.txt

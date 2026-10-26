@@ -1,0 +1,41 @@
+name: Python CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Python Linting & Pytest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync
+
+      - name: Run Ruff Lint Check
+        run: |
+          uv run ruff check .
+
+      - name: Run Ruff Format Check
+        run: |
+          uv run ruff format --check .
+
+      - name: Run Pytest Test Suite
+        run: |
+          uv run pytest tests/

@@ -1,0 +1,39 @@
+{
+  "google_tasks_enable_supports": false,
+  "max_ai_calls": 3,
+  "agent_level": 2,
+  "check_geometry_health": true,
+  "min_connection_thickness_mm": 1.2,
+  "bed_contact_threshold_mm": 0.4,
+  "service_limits": {
+    "online_backend": 3,
+    "telegram_bot": 3,
+    "cli": 3,
+    "google_tasks": 5
+  },
+  "session_retention": {
+    "auto_purge_enabled": true,
+    "keep_all_versions_sessions": 15,
+    "keep_latest_version_sessions": 30
+  },
+  "max_print_time_minutes": 0,
+  "max_size_inches": 0,
+  "service_constraints": {
+    "online_backend": {
+      "max_print_time_minutes": 0,
+      "max_size_inches": 0
+    },
+    "telegram_bot": {
+      "max_print_time_minutes": 0,
+      "max_size_inches": 0
+    },
+    "cli": {
+      "max_print_time_minutes": 0,
+      "max_size_inches": 0
+    },
+    "google_tasks": {
+      "max_print_time_minutes": 0,
+      "max_size_inches": 0
+    }
+  }
+}

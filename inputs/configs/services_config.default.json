@@ -1,0 +1,27 @@
+{
+  "services": {
+    "online_backend": true,
+    "online_frontend": true,
+    "telegram_bot": true,
+    "google_tasks_bot": true
+  },
+  "online_frontend_mode": "dev",
+  "logging": {
+    "max_bytes_per_file": 10485760,
+    "backup_count": 5,
+    "circuit_breaker_max_restarts": 5,
+    "circuit_breaker_window_seconds": 180,
+    "backoff_initial_seconds": 2,
+    "backoff_max_seconds": 60
+  },
+  "auto_updater": {
+    "enabled": true,
+    "branch": "main",
+    "window_start": "04:00",
+    "window_end": "05:00",
+    "check_interval_seconds": 300,
+    "busy_retry_interval_seconds": 600,
+    "check_printer_busy": true,
+    "notify_telegram": true
+  }
+}
