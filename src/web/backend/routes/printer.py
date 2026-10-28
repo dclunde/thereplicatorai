@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 import traceback
 from typing import Optional
@@ -102,7 +103,6 @@ def get_ams_colors():
 def print_session(session_id: str, req: Optional[PrintRequest] = None):
 
     from src.web.backend.routes.sessions import (
-        _write_batch_scripts,
         get_workspace_dir,
         load_session,
         sanitize_id,
@@ -162,58 +162,59 @@ def print_session(session_id: str, req: Optional[PrintRequest] = None):
                 detail=f"Printer is currently busy: {busy_msg}",
             )
 
-        print_bat_path = os.path.join(v_dir, "print.bat")
-        if not os.path.exists(print_bat_path):
-            stl_files = (
-                [f for f in os.listdir(v_dir) if f.lower().endswith(".stl")]
+        stl_files = (
+            sorted([f for f in os.listdir(v_dir) if f.lower().endswith(".stl")])
+            if os.path.exists(v_dir)
+            else []
+        )
+        if stl_files:
+            stl_path = os.path.abspath(os.path.join(v_dir, stl_files[0]))
+        else:
+            scad_files = (
+                sorted([f for f in os.listdir(v_dir) if f.lower().endswith(".scad")])
                 if os.path.exists(v_dir)
                 else []
             )
-            if not stl_files:
+            if scad_files:
+                base_name = os.path.splitext(scad_files[0])[0]
+                stl_path = os.path.abspath(os.path.join(v_dir, f"{base_name}.stl"))
+            else:
                 raise HTTPException(status_code=400, detail="Print script missing")
-            base_name = os.path.splitext(stl_files[0])[0]
-            enable_supp = (
-                req.enable_supports
-                if req and req.enable_supports is not None
-                else session_data.get("enable_supports", False)
-            )
-            _write_batch_scripts(v_dir, base_name, enable_supports=bool(enable_supp))
 
-        if req:
-            with open(print_bat_path, "r", encoding="utf-8") as f:
-                bat_content = f.read()
-            lines = bat_content.splitlines()
-            for i, line in enumerate(lines):
-                stripped = line.strip()
-                if (
-                    stripped.startswith("python ")
-                    or "manual_print" in stripped
-                    or "bambu_printer.py" in stripped
-                    or (stripped.startswith('"') and ".stl" in stripped)
-                ):
-                    import re
-
-                    line = re.sub(r" --slot -?\d+", "", line)
-                    if req.ams_slot is not None:
-                        line = line + f" --slot {req.ams_slot}"
-
-                    if req.enable_supports is not None:
-                        line = re.sub(r" --(no-)?support\b", "", line)
-                        if req.enable_supports:
-                            line = line + " --support"
-
-                    lines[i] = line
-            with open(print_bat_path, "w", encoding="utf-8") as f:
-                f.write("\n".join(lines) + "\n")
-
-            if req.enable_supports is not None:
-                session_data["enable_supports"] = req.enable_supports
-                save_session_atomic(session_dir, session_data)
-
-        _get_subprocess().Popen(
-            ["cmd.exe", "/c", "start", "Bambu P2S Print Job", "cmd.exe", "/c", "print.bat"],
-            cwd=v_dir,
+        enable_supp = (
+            req.enable_supports
+            if req and req.enable_supports is not None
+            else session_data.get("enable_supports", False)
         )
+        if req and req.enable_supports is not None:
+            session_data["enable_supports"] = req.enable_supports
+            save_session_atomic(session_dir, session_data)
+
+        requested_colors = session_data.get("requested_colors") or session_data.get("colors") or []
+        colors_csv = ",".join(requested_colors) if requested_colors else ""
+
+        for bat_name in ("print.bat", "slice.bat"):
+            bat_file = os.path.join(v_dir, bat_name)
+            if os.path.exists(bat_file):
+                try:
+                    os.remove(bat_file)
+                except OSError:
+                    pass
+
+        cmd = [sys.executable, "-m", "src.cli.manual_print", stl_path, colors_csv]
+        if req and req.ams_slot is not None:
+            cmd.extend(["--slot", str(req.ams_slot)])
+        if enable_supp:
+            cmd.append("--support")
+        else:
+            cmd.append("--no-support")
+
+        if sys.platform == "win32":
+            full_cmd = ["cmd.exe", "/c", "start", "Bambu P2S Print Job"] + cmd
+        else:
+            full_cmd = cmd
+
+        _get_subprocess().Popen(full_cmd, cwd=v_dir)
         return {"status": "ok", "message": "Print job started"}
     except HTTPException:
         raise

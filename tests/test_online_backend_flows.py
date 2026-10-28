@@ -134,13 +134,15 @@ def test_bug5_list_sessions_null_last_updated():
 
 # 8. Bug 8: Stuck AMS slots in print.bat
 def test_bug8_print_bat_auto_slot(monkeypatch):
-    """Ensure auto slot (None) removes existing --slot flags from print.bat."""
+    """Ensure auto slot (None) launches python print without --slot flag and cleans legacy print.bat."""
     session_id = "test_session_print"
     v_dir = os.path.join(WORKSPACE_DIR, session_id, "v1")
     os.makedirs(v_dir, exist_ok=True)
 
     with open(os.path.join(WORKSPACE_DIR, session_id, "session.json"), "w") as f:
         json.dump({"title": "Test", "versions": 1}, f)
+    with open(os.path.join(v_dir, "file.stl"), "w") as f:
+        f.write("solid file endsolid file")
 
     bat_path = os.path.join(v_dir, "print.bat")
     with open(bat_path, "w") as f:
@@ -149,15 +151,14 @@ def test_bug8_print_bat_auto_slot(monkeypatch):
     monkeypatch.setattr("src.web.backend.app.bambu_cloud.is_connected", lambda: True)
     monkeypatch.setattr("src.web.backend.app.bambu_cloud.is_printer_busy", lambda: (False, "Idle"))
 
-    with patch("subprocess.Popen"):
+    with patch("subprocess.Popen") as mock_popen:
         response = client.post(f"/sessions/{session_id}/print", json={"ams_slot": None})
         assert response.status_code == 200
+        called_cmd = mock_popen.call_args[0][0]
+        assert "src.cli.manual_print" in called_cmd
+        assert "--slot" not in called_cmd
 
-    with open(bat_path, "r") as f:
-        content = f.read()
-
-    assert "--slot 1" not in content, "Should strip existing slot"
-    assert "--slot" not in content, "Should not add new slot when ams_slot is None"
+    assert not os.path.exists(bat_path), "Should remove legacy print.bat"
 
 
 # --- Bug 4: Path Traversal in Delete Session ---
@@ -178,21 +179,20 @@ def test_bug6_print_session_ams_slot_regex(tmp_path, monkeypatch):
 
     with open(os.path.join(test_ws, sid, "session.json"), "w") as f:
         json.dump({"id": sid, "versions": 1}, f)
-
-    with open(os.path.join(v1_dir, "print.bat"), "w") as f:
-        f.write('python "bambu_printer.py" "model.stl" "" --slot -1\n')
+    with open(os.path.join(v1_dir, "model.stl"), "w") as f:
+        f.write("solid model endsolid model")
 
     monkeypatch.setattr("src.web.backend.routes.sessions.WORKSPACE_DIR", test_ws)
     monkeypatch.setattr("src.web.backend.app.bambu_cloud.is_connected", lambda: True)
     monkeypatch.setattr("src.web.backend.app.bambu_cloud.is_printer_busy", lambda: (False, "Idle"))
-    monkeypatch.setattr("subprocess.Popen", lambda *args, **kwargs: MagicMock())
 
-    res = client.post(f"/sessions/{sid}/print", json={"ams_slot": 2})
-    assert res.status_code == 200
-    with open(os.path.join(v1_dir, "print.bat"), "r") as f:
-        content = f.read()
-    assert "--slot 2" in content
-    assert "--slot -1" not in content
+    with patch("subprocess.Popen") as mock_popen:
+        res = client.post(f"/sessions/{sid}/print", json={"ams_slot": 2})
+        assert res.status_code == 200
+        called_cmd = mock_popen.call_args[0][0]
+        assert "--slot" in called_cmd
+        idx = called_cmd.index("--slot")
+        assert called_cmd[idx + 1] == "2"
 
 
 def test_print_session_slot_4_external(tmp_path, monkeypatch):
@@ -203,21 +203,20 @@ def test_print_session_slot_4_external(tmp_path, monkeypatch):
 
     with open(os.path.join(test_ws, sid, "session.json"), "w") as f:
         json.dump({"id": sid, "versions": 1}, f)
-
-    with open(os.path.join(v1_dir, "print.bat"), "w") as f:
-        f.write('python "bambu_printer.py" "model.stl" "" --slot 1\n')
+    with open(os.path.join(v1_dir, "model.stl"), "w") as f:
+        f.write("solid model endsolid model")
 
     monkeypatch.setattr("src.web.backend.routes.sessions.WORKSPACE_DIR", test_ws)
     monkeypatch.setattr("src.web.backend.app.bambu_cloud.is_connected", lambda: True)
     monkeypatch.setattr("src.web.backend.app.bambu_cloud.is_printer_busy", lambda: (False, "Idle"))
-    monkeypatch.setattr("subprocess.Popen", lambda *args, **kwargs: MagicMock())
 
-    res = client.post(f"/sessions/{sid}/print", json={"ams_slot": 4})
-    assert res.status_code == 200
-    with open(os.path.join(v1_dir, "print.bat"), "r") as f:
-        content = f.read()
-    assert "--slot 4" in content
-    assert "--slot 1" not in content
+    with patch("subprocess.Popen") as mock_popen:
+        res = client.post(f"/sessions/{sid}/print", json={"ams_slot": 4})
+        assert res.status_code == 200
+        called_cmd = mock_popen.call_args[0][0]
+        assert "--slot" in called_cmd
+        idx = called_cmd.index("--slot")
+        assert called_cmd[idx + 1] == "4"
 
 
 def test_print_session_blocked_when_disconnected(tmp_path, monkeypatch):
@@ -228,9 +227,8 @@ def test_print_session_blocked_when_disconnected(tmp_path, monkeypatch):
 
     with open(os.path.join(test_ws, sid, "session.json"), "w") as f:
         json.dump({"id": sid, "versions": 1}, f)
-
-    with open(os.path.join(v1_dir, "print.bat"), "w") as f:
-        f.write('python "bambu_printer.py" "model.stl" "" --slot 1\n')
+    with open(os.path.join(v1_dir, "model.stl"), "w") as f:
+        f.write("solid model endsolid model")
 
     monkeypatch.setattr("src.web.backend.routes.sessions.WORKSPACE_DIR", test_ws)
     monkeypatch.setattr("src.web.backend.app.bambu_cloud.is_connected", lambda: False)
@@ -384,22 +382,20 @@ def test_print_purged_and_rerendered_session(tmp_path, monkeypatch):
     # Re-render v1
     res_rerender = client.post(f"/sessions/{sid}/versions/1/rerender")
     assert res_rerender.status_code == 200
-    assert os.path.exists(os.path.join(v1_dir, "print.bat"))
-    assert os.path.exists(os.path.join(v1_dir, "slice.bat"))
+    assert not os.path.exists(os.path.join(v1_dir, "print.bat"))
+    assert not os.path.exists(os.path.join(v1_dir, "slice.bat"))
 
     # Now print v1
-    with patch("subprocess.Popen"):
+    with patch("subprocess.Popen") as mock_popen:
         res_print = client.post(
             f"/sessions/{sid}/print",
             json={"version": 1, "ams_slot": 1, "enable_supports": True},
         )
         assert res_print.status_code == 200
-
-    with open(os.path.join(v1_dir, "print.bat"), "r", encoding="utf-8") as f:
-        bat_content = f.read()
-    assert "-m src.cli.manual_print" in bat_content
-    assert "--slot 1" in bat_content
-    assert "--support" in bat_content
+        called_cmd = mock_popen.call_args[0][0]
+        assert "-m" in called_cmd and "src.cli.manual_print" in called_cmd
+        assert "--slot" in called_cmd and called_cmd[called_cmd.index("--slot") + 1] == "1"
+        assert "--support" in called_cmd
 
 
 def test_print_bot_created_session_without_bat(tmp_path, monkeypatch):
@@ -420,20 +416,17 @@ def test_print_bot_created_session_without_bat(tmp_path, monkeypatch):
     monkeypatch.setattr("src.web.backend.app.bambu_cloud.is_connected", lambda: True)
     monkeypatch.setattr("src.web.backend.app.bambu_cloud.is_printer_busy", lambda: (False, "Idle"))
 
-    with patch("subprocess.Popen"):
+    with patch("subprocess.Popen") as mock_popen:
         res = client.post(
             f"/sessions/{sid}/print",
             json={"version": 1, "ams_slot": 2, "enable_supports": True},
         )
         assert res.status_code == 200
-
-    bat_path = os.path.join(v1_dir, "print.bat")
-    assert os.path.exists(bat_path)
-    with open(bat_path, "r", encoding="utf-8") as f:
-        content = f.read()
-    assert "bot_design_v1.stl" in content
-    assert "--slot 2" in content
-    assert "--support" in content
+        called_cmd = mock_popen.call_args[0][0]
+        assert any("bot_design_v1.stl" in arg for arg in called_cmd)
+        assert "--slot" in called_cmd and called_cmd[called_cmd.index("--slot") + 1] == "2"
+        assert "--support" in called_cmd
+    assert not os.path.exists(os.path.join(v1_dir, "print.bat"))
 
 
 def test_clean_scad_code_escaped_newlines():
@@ -463,31 +456,30 @@ def test_print_bat_support_flag_toggle(monkeypatch):
     monkeypatch.setattr("src.web.backend.app.bambu_cloud.is_connected", lambda: True)
     monkeypatch.setattr("src.web.backend.app.bambu_cloud.is_printer_busy", lambda: (False, "Idle"))
 
+    with open(os.path.join(v_dir, "file.stl"), "w") as f:
+        f.write("solid file endsolid file")
+
     # 1. Enable supports
-    with patch("subprocess.Popen"):
+    with patch("subprocess.Popen") as mock_popen1:
         response = client.post(
             f"/sessions/{session_id}/print",
             json={"ams_slot": 1, "enable_supports": True},
         )
         assert response.status_code == 200
-
-    with open(bat_path, "r") as f:
-        content = f.read()
-    assert "--support" in content
-    assert "--slot 1" in content
+        called_cmd1 = mock_popen1.call_args[0][0]
+        assert "--support" in called_cmd1
+        assert "--slot" in called_cmd1 and called_cmd1[called_cmd1.index("--slot") + 1] == "1"
 
     # 2. Disable supports
-    with patch("subprocess.Popen"):
+    with patch("subprocess.Popen") as mock_popen2:
         response = client.post(
             f"/sessions/{session_id}/print",
             json={"ams_slot": 2, "enable_supports": False},
         )
         assert response.status_code == 200
-
-    with open(bat_path, "r") as f:
-        content = f.read()
-    assert "--support" not in content
-    assert "--slot 2" in content
+        called_cmd2 = mock_popen2.call_args[0][0]
+        assert "--no-support" in called_cmd2
+        assert "--slot" in called_cmd2 and called_cmd2[called_cmd2.index("--slot") + 1] == "2"
 
 
 def test_new_session_support_flag_handling():
@@ -722,10 +714,10 @@ def test_compile_openscad_generator_skip_compile_reuses_artifacts(tmp_path, monk
     mock_popen.assert_not_called()
     mock_slicer.assert_not_called()
 
-    # Verify .scad, slice.bat, and print.bat were written
+    # Verify .scad was written, and batch scripts are NOT written
     assert os.path.exists(os.path.join(v1_dir, f"{base_name}.scad"))
-    assert os.path.exists(os.path.join(v1_dir, "slice.bat"))
-    assert os.path.exists(os.path.join(v1_dir, "print.bat"))
+    assert not os.path.exists(os.path.join(v1_dir, "slice.bat"))
+    assert not os.path.exists(os.path.join(v1_dir, "print.bat"))
 
     # Verify final complete event has prebuilt metrics
     complete_evts = [e for e in events if e.get("status") == "complete"]

@@ -23,7 +23,6 @@ from src.core.sessions import (
     format_session_dir_name,
     parse_and_strip_support_flags,
     save_session_atomic,
-    write_version_print_scripts,
 )
 from src.core.slicer import format_dimensions_inches, get_slice_info_from_3mf
 
@@ -544,16 +543,6 @@ async def process_prompt(
                     "Note: Could not upload STL document file, but continuing with slicing and preview.",
                 )
 
-        try:
-            write_version_print_scripts(
-                outdir,
-                stl_file,
-                requested_colors=requested_colors,
-                enable_supports=enable_supports,
-            )
-        except Exception:
-            pass
-
         save_fn(
             parent_dir,
             filename_prefix,
@@ -650,11 +639,6 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await safe_reply_text(update, "Failed to download the uploaded file. Please try again.")
         shutil.rmtree(parent_dir, ignore_errors=True)
         return ConversationHandler.END
-
-    try:
-        write_version_print_scripts(outdir, stl_file, requested_colors=[], enable_supports=False)
-    except Exception:
-        pass
 
     conv_history = [
         {"role": "user", "text": "Uploaded STL"},

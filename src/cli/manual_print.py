@@ -65,11 +65,13 @@ def _abort_if_busy(client: BambuClient) -> None:
 def run_cli_print(
     stl_file: str, requested_colors: list[str], force_slot: int | None, enable_supports: bool | None
 ):
-    """Executes a direct non-interactive print command (used by print.bat and automation)."""
+    """Executes a direct non-interactive print command."""
+    stl_file = os.path.abspath(stl_file)
     if not os.path.exists(stl_file):
         print(f"File not found: {stl_file}")
         sys.exit(1)
 
+    candidate_3mf = os.path.splitext(stl_file)[0] + ".3mf"
     reuse_fn = (
         slicer_3mf._can_reuse_existing_3mf
         if hasattr(slicer_3mf._can_reuse_existing_3mf, "return_value")
@@ -80,6 +82,12 @@ def run_cli_print(
         print(f"Reusing existing sliced 3MF: {existing_3mf}")
         out_3mf = existing_3mf
     else:
+        if os.path.exists(candidate_3mf):
+            print(
+                f"Existing 3MF does not match requested support settings (supports={bool(enable_supports)}). Re-slicing..."
+            )
+        else:
+            print(f"Slicing {os.path.basename(stl_file)} (supports={bool(enable_supports)})...")
         slice_fn = (
             slicer_3mf.slice_stl_to_3mf
             if hasattr(slicer_3mf.slice_stl_to_3mf, "return_value")
@@ -161,6 +169,7 @@ def run_interactive_print():
     input_file = input("Enter path to file (.scad or .stl): ").strip()
     if input_file.startswith('"') and input_file.endswith('"'):
         input_file = input_file[1:-1]
+    input_file = os.path.abspath(input_file)
 
     if not os.path.exists(input_file):
         print(f"Error: File '{input_file}' not found.")

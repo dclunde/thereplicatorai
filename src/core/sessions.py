@@ -4,18 +4,14 @@ import logging
 import os
 import re
 import shutil
-import sys
 import time
 import uuid
 
 from src.core.config import (
     CONFIGS_DIR,
-    ROOT_DIR,
     SESSIONS_DIR,
     SNAPSHOTS_DIR,
-    TEMPLATES_DIR,
     TMP_DIR,
-    get_bambu_studio_path,
 )
 
 logger = logging.getLogger(__name__)
@@ -27,49 +23,15 @@ def write_version_print_scripts(
     requested_colors: list[str] | None = None,
     enable_supports: bool = False,
 ) -> tuple[str, str]:
-    """Creates print.bat and slice.bat inside v_dir for convenient manual launching."""
-    os.makedirs(v_dir, exist_ok=True)
-    out_slice_bat = os.path.join(v_dir, "slice.bat")
-    out_print_bat = os.path.join(v_dir, "print.bat")
-
-    base_name = os.path.splitext(os.path.basename(stl_path))[0]
-    stl_filename = os.path.basename(stl_path)
-    template_path = os.path.join(TEMPLATES_DIR, "default_project.3mf")
-    try:
-        slicer_bin = get_bambu_studio_path()
-    except Exception:
-        slicer_bin = "orca-slicer"
-
-    ps_quickedit = (
-        'powershell -Command "$x = Add-Type -MemberDefinition \'[DllImport(\\"kernel32.dll\\")] '
-        'public static extern IntPtr GetStdHandle(int h); [DllImport(\\"kernel32.dll\\")] '
-        "public static extern bool SetConsoleMode(IntPtr h, int m);' -Name 'Win32' -PassThru; "
-        '[void]$x::SetConsoleMode($x::GetStdHandle(-10), 128)"\n'
-    )
-
-    with open(out_slice_bat, "w", encoding="utf-8") as f:
-        f.write("@echo off\n")
-        f.write(
-            f'"{slicer_bin}" "{template_path}" --slice 0 --orient 1 --arrange 1 --export-3mf "{base_name}.3mf" "{stl_filename}"\n'
-        )
-        f.write("echo Slicing complete!\n")
-        f.write(ps_quickedit)
-        f.write("pause\n")
-
-    colors_csv = ",".join(requested_colors) if requested_colors else ""
-    colors_csv_safe = colors_csv.replace('"', '\\"')
-    support_flag = " --support" if enable_supports else ""
-
-    with open(out_print_bat, "w", encoding="utf-8") as f:
-        f.write("@echo off\n")
-        f.write(f'cd /d "{ROOT_DIR}"\n')
-        f.write(
-            f'"{sys.executable}" -m src.cli.manual_print "{stl_path}" "{colors_csv_safe}"{support_flag}\n'
-        )
-        f.write(ps_quickedit)
-        f.write("pause\n")
-
-    return out_print_bat, out_slice_bat
+    """Deprecated: Batch scripts are no longer generated per-version. Printing runs via Python directly."""
+    for bat_name in ("print.bat", "slice.bat"):
+        p = os.path.join(v_dir, bat_name)
+        if os.path.exists(p):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+    return "", ""
 
 
 def sanitize_folder_name_part(name: str) -> str:
@@ -377,7 +339,7 @@ def purge_heavy_assets(
     sessions_dir: str | None = None,
 ) -> None:
     """Purges large generated 3D files (.stl, .3mf, .gcode, .jpg, .png, .webp, .xml, .log, help.txt)
-    from a session folder, while preserving all .scad, .bat, and session metadata files.
+    from a session folder, while preserving all .scad and session metadata files.
     """
     root_sessions = sessions_dir or SESSIONS_DIR
     if not session_dir_or_id:
@@ -441,7 +403,7 @@ def load_retention_config(configs_dir: str | None = None) -> dict:
 
 
 def purge_version_heavy_assets(v_dir: str) -> list[str]:
-    """Removes heavy binary files inside a single version directory while keeping .scad and .bat untouched."""
+    """Removes heavy binary files inside a single version directory while keeping .scad untouched."""
     purged = []
     if not os.path.isdir(v_dir):
         return purged
@@ -577,7 +539,7 @@ def purge_session_except_active(session_dir: str, session_data: dict | None = No
 
 
 def purge_all_session_heavy_assets(session_dir: str, session_data: dict | None = None) -> dict:
-    """Purges heavy assets from ALL versions, preserving session.json, .bat, and all .scad files."""
+    """Purges heavy assets from ALL versions, preserving session.json, and all .scad files."""
     if not os.path.isdir(session_dir):
         return {"purged_files": []}
 

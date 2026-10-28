@@ -463,10 +463,11 @@ def test_api_session_lifecycle_hybrid_naming(tmp_path, monkeypatch):
     assert s_data_version == 1
 
 
-def test_purge_preserves_bat_and_write_version_print_scripts(tmp_path):
+def test_purge_preserves_scad_and_cleans_legacy_bat(tmp_path):
     from src.core.sessions import (
         purge_all_session_heavy_assets,
         purge_heavy_assets,
+        purge_version_heavy_assets,
         write_version_print_scripts,
     )
 
@@ -480,44 +481,43 @@ def test_purge_preserves_bat_and_write_version_print_scripts(tmp_path):
     stl1.write_text("solid v1 endsolid v1", encoding="utf-8")
     scad1 = v1_dir / "part_v1.scad"
     scad1.write_text("cube(10);", encoding="utf-8")
-    print_bat1, slice_bat1 = write_version_print_scripts(
+    legacy_bat1 = v1_dir / "print.bat"
+    legacy_bat1.write_text("echo old print", encoding="utf-8")
+
+    res1 = write_version_print_scripts(
         str(v1_dir), str(stl1), requested_colors=["Red", "Blue"], enable_supports=True
     )
+    assert res1 == ("", "")
+    assert not legacy_bat1.exists()
 
     stl2 = v2_dir / "part_v2.stl"
     stl2.write_text("solid v2 endsolid v2", encoding="utf-8")
     scad2 = v2_dir / "part_v2.scad"
     scad2.write_text("cube(20);", encoding="utf-8")
-    print_bat2, slice_bat2 = write_version_print_scripts(
+    legacy_bat2 = v2_dir / "print.bat"
+    legacy_bat2.write_text("echo old print 2", encoding="utf-8")
+
+    res2 = write_version_print_scripts(
         str(v2_dir), str(stl2), requested_colors=[], enable_supports=False
     )
+    assert res2 == ("", "")
+    assert not legacy_bat2.exists()
 
-    assert os.path.exists(print_bat1)
-    assert os.path.exists(slice_bat1)
-    bat1_text = open(print_bat1, encoding="utf-8").read()
-    assert "-m src.cli.manual_print" in bat1_text
-    assert "Red,Blue" in bat1_text
-    assert "--support" in bat1_text
-
-    # 1. purge_version_heavy_assets preserves .bat and .scad
+    # 1. purge_version_heavy_assets preserves .scad
     purge_version_heavy_assets(str(v1_dir))
     assert not stl1.exists()
     assert scad1.exists()
-    assert os.path.exists(print_bat1)
-    assert os.path.exists(slice_bat1)
 
-    # 2. purge_all_session_heavy_assets preserves .bat and .scad
+    # 2. purge_all_session_heavy_assets preserves .scad
     purge_all_session_heavy_assets(str(s_dir))
     assert not stl2.exists()
     assert scad2.exists()
-    assert os.path.exists(print_bat2)
-    assert os.path.exists(slice_bat2)
 
-    # 3. purge_heavy_assets preserves .bat and .scad
+    # 3. purge_heavy_assets preserves .scad
     stl2.write_text("solid v2 endsolid v2", encoding="utf-8")
     purge_heavy_assets(str(s_dir))
     assert not stl2.exists()
-    assert os.path.exists(print_bat2)
+    assert scad2.exists()
 
 
 def test_retention_sweeps_slice_and_validate_tmp_dirs(tmp_path):

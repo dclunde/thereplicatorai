@@ -243,7 +243,7 @@ def test_google_tasks_uses_hybrid_timestamp_naming(tmp_path, monkeypatch):
     folders = [d for d in os.listdir(tmp_path) if os.path.isdir(tmp_path / d)]
     assert len(folders) == 1
     assert re.match(r"^\d{8}_\d{6}_cable_clip_[a-f0-9]{8}$", folders[0])
-    assert (tmp_path / folders[0] / "v1" / "print.bat").exists()
+    assert not (tmp_path / folders[0] / "v1" / "print.bat").exists()
 
 
 def test_authenticate_google_tasks_corrupted_token_file_recovers(tmp_path, monkeypatch):
