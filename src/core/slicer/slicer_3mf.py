@@ -132,6 +132,9 @@ def get_enable_supports_config() -> bool:
 
 def _can_reuse_existing_3mf(stl_file: str, enable_supports: bool | None) -> str | None:
     """Return existing sibling .3mf path if it is newer than stl_file and matches support settings."""
+    if not stl_file:
+        return None
+    stl_file = os.path.abspath(stl_file)
     candidate_3mf = os.path.splitext(stl_file)[0] + ".3mf"
     if not os.path.exists(candidate_3mf) or not os.path.exists(stl_file):
         return None
@@ -151,6 +154,9 @@ def _can_reuse_existing_3mf(stl_file: str, enable_supports: bool | None) -> str 
                     "true",
                 )
         if has_supports != want_supports:
+            logger.info(
+                f"Existing 3MF ({candidate_3mf}) has supports={has_supports}, but supports={want_supports} was requested. Re-slicing required."
+            )
             return None
         return candidate_3mf
     except Exception:
@@ -164,13 +170,25 @@ def slice_stl_to_3mf(
     enable_supports: bool | None = None,
 ) -> str | None:
     """Slices an STL to a 3MF file using isolated CWD under outputs/tmp/job_<uuid>."""
+    if not stl_file:
+        return None
+
+    stl_file = os.path.abspath(stl_file)
+    if not os.path.exists(stl_file):
+        logger.error(f"STL file not found: {stl_file}")
+        return None
+
     if enable_supports is None:
         enable_supports = False
 
     if outdir and file_basename:
-        out_3mf = os.path.join(outdir, f"{file_basename}.3mf")
+        out_3mf = os.path.abspath(os.path.join(outdir, f"{file_basename}.3mf"))
+    elif outdir:
+        out_3mf = os.path.abspath(
+            os.path.join(outdir, os.path.splitext(os.path.basename(stl_file))[0] + ".3mf")
+        )
     else:
-        out_3mf = os.path.splitext(stl_file)[0] + ".3mf"
+        out_3mf = os.path.abspath(os.path.splitext(stl_file)[0] + ".3mf")
 
     os.makedirs(TMP_DIR, exist_ok=True)
     job_dir = tempfile.mkdtemp(prefix="slice_", dir=TMP_DIR)
@@ -298,8 +316,13 @@ def compile_and_slice(
     enable_supports: bool | None = None,
 ) -> str | None:
     """Compiles SCAD to STL and slices it to 3MF."""
+    if not scad_file:
+        return None
+    scad_file = os.path.abspath(scad_file)
     if out_dir is None:
         out_dir = os.path.dirname(scad_file)
+    else:
+        out_dir = os.path.abspath(out_dir)
 
     stl_file = os.path.join(out_dir, os.path.basename(scad_file).replace(".scad", ".stl"))
     openscad_bin = get_openscad_path()

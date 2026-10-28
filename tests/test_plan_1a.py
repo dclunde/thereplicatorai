@@ -478,8 +478,8 @@ def test_simple_mode_reuses_prebuilt_stl_and_saves_metrics(tmp_path, monkeypatch
     assert len(sessions) == 1
     sdir = tmp_path / sessions[0]
     v1_dir = sdir / "v1"
-    assert (v1_dir / "print.bat").exists()
-    assert (v1_dir / "slice.bat").exists()
+    assert not (v1_dir / "print.bat").exists()
+    assert not (v1_dir / "slice.bat").exists()
 
     sdata = json.loads((sdir / "session.json").read_text(encoding="utf-8"))
     assistant_msg = sdata["history"][1]

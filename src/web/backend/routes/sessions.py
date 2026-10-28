@@ -17,8 +17,6 @@ from src.core.activity_tracker import busy_activity
 from src.core.ai import clean_scad_code, generate_with_validation, get_max_ai_calls
 from src.core.config import (
     SESSIONS_DIR,
-    TEMPLATES_DIR,
-    get_bambu_studio_path,
     get_openscad_path,
 )
 from src.core.sessions import (
@@ -235,7 +233,13 @@ def load_session(session_id: str) -> dict:
         if 0 < v_num <= len(code_msgs):
             msg_meta = code_msgs[v_num - 1]
             if "warnings" in msg_meta:
-                v_entry["warnings"] = msg_meta["warnings"]
+                raw_w = msg_meta["warnings"]
+                if v_entry.get("has_stl") and isinstance(raw_w, list):
+                    clean_w = [w for w in raw_w if "failed to compile" not in w.lower()]
+                    msg_meta["warnings"] = clean_w
+                    v_entry["warnings"] = clean_w
+                else:
+                    v_entry["warnings"] = raw_w
             if "enable_supports" in msg_meta:
                 v_entry["enable_supports"] = msg_meta["enable_supports"]
             if "has_supports" in msg_meta:
@@ -278,37 +282,15 @@ def _write_batch_scripts(
     requested_colors: list = None,
     enable_supports: bool = False,
 ):
-    out_slice_bat = os.path.join(v_dir, "slice.bat")
-    out_print_bat = os.path.join(v_dir, "print.bat")
-    template_path = os.path.join(TEMPLATES_DIR, "default_project.3mf")
-
-    with open(out_slice_bat, "w", encoding="utf-8") as f:
-        f.write("@echo off\n")
-        f.write(
-            f'"{get_bambu_studio_path()}" "{template_path}" --slice 0 --orient 1 --arrange 1 --export-3mf "{base_name}.3mf" "{base_name}.stl"\n'
-        )
-        f.write("echo Slicing complete!\n")
-        f.write(
-            'powershell -Command "$x = Add-Type -MemberDefinition \'<DllImport(\\"kernel32.dll\\")> public static extern IntPtr GetStdHandle(int h); <DllImport(\\"kernel32.dll\\")> public static extern bool SetConsoleMode(IntPtr h, int m);\' -Name \'Win32\' -PassThru; [void]$x::SetConsoleMode($x::GetStdHandle(-10), 128)"\n'.replace(
-                "<", "["
-            ).replace(">", "]")
-        )
-        f.write("pause\n")
-
-    with open(out_print_bat, "w", encoding="utf-8") as f:
-        f.write("@echo off\n")
-        colors_csv = ",".join(requested_colors) if requested_colors else ""
-        colors_csv_safe = colors_csv.replace('"', '\\"')
-        support_flag = " --support" if enable_supports else ""
-        f.write(
-            f'"{sys.executable}" -m src.cli.manual_print "{base_name}.stl" "{colors_csv_safe}"{support_flag}\n'
-        )
-        f.write(
-            'powershell -Command "$x = Add-Type -MemberDefinition \'<DllImport(\\"kernel32.dll\\")> public static extern IntPtr GetStdHandle(int h); <DllImport(\\"kernel32.dll\\")> public static extern bool SetConsoleMode(IntPtr h, int m);\' -Name \'Win32\' -PassThru; [void]$x::SetConsoleMode($x::GetStdHandle(-10), 128)"\n'.replace(
-                "<", "["
-            ).replace(">", "]")
-        )
-        f.write("pause\n")
+    """Deprecated: Batch scripts are no longer generated per-version. Printing runs via Python directly."""
+    for bat_name in ("print.bat", "slice.bat"):
+        p = os.path.join(v_dir, bat_name)
+        if os.path.exists(p):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+    return "", ""
 
 
 def compile_openscad_generator(
@@ -347,13 +329,6 @@ def compile_openscad_generator(
     scad_code = clean_scad_code(scad_code)
     with open(scad_file, "w", encoding="utf-8") as f:
         f.write(scad_code)
-
-    _write_batch_scripts(
-        v_dir,
-        base_name,
-        requested_colors=requested_colors,
-        enable_supports=enable_supports,
-    )
 
     total_steps = MAX_AI_CALLS + 2
     render_progress = int(((MAX_AI_CALLS + 1) / total_steps) * 100)
@@ -500,6 +475,8 @@ def compile_openscad_generator(
         except Exception:
             pass
 
+    clean_warnings = [w for w in (warnings or []) if "failed to compile" not in w.lower()]
+
     # We serve the path relative to the backend so the frontend can access it via the static mount
     yield {
         "status": "complete",
@@ -510,7 +487,7 @@ def compile_openscad_generator(
             "grams": print_grams,
             "has_supports": has_supports,
             "enable_supports": enable_supports,
-            "warnings": list(warnings) if warnings else [],
+            "warnings": clean_warnings,
         },
     }
 
@@ -846,7 +823,11 @@ def create_session(req: NewSessionRequest):
                             if prebuilt_has_supports is not None
                             else False,
                         )
-                        msg["warnings"] = assets.get("warnings", list(warnings))
+                        msg["warnings"] = [
+                            w
+                            for w in assets.get("warnings", list(warnings))
+                            if "failed to compile" not in w.lower()
+                        ]
                         break
 
                 session_data["versions"] = 1
@@ -1063,7 +1044,11 @@ def edit_session(session_id: str, req: EditSessionRequest):
                     "has_supports",
                     bool(prebuilt_has_supports) if prebuilt_has_supports is not None else False,
                 )
-                session_data["history"][-1]["warnings"] = assets.get("warnings", list(warnings))
+                session_data["history"][-1]["warnings"] = [
+                    w
+                    for w in assets.get("warnings", list(warnings))
+                    if "failed to compile" not in w.lower()
+                ]
 
                 session_data["title"] = filename
                 session_data["versions"] = next_version
@@ -1187,11 +1172,6 @@ def rerender_session(session_id: str, version: Optional[int] = None):
                         f.write(scad_code)
 
                 stl_file = os.path.join(v_dir, f"{base_name}.stl")
-                _write_batch_scripts(
-                    v_dir,
-                    base_name,
-                    enable_supports=ver_enable_supports,
-                )
 
                 yield (
                     json.dumps(

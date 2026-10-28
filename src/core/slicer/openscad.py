@@ -152,9 +152,11 @@ def compile_scad_to_stl(
     temp_dir = None
 
     if is_file:
-        scad_file = scad_path_or_code
+        scad_file = os.path.abspath(scad_path_or_code)
         if out_stl_path is None:
             out_stl_path = os.path.splitext(scad_file)[0] + ".stl"
+        else:
+            out_stl_path = os.path.abspath(out_stl_path)
     else:
         temp_dir = tempfile.mkdtemp(prefix="ttp_validate_", dir=TMP_DIR)
         scad_file = os.path.join(temp_dir, "validate.scad")

@@ -88,7 +88,7 @@ def main(prompt_arg: str | None = None) -> int:
     print("Creating OpenSCAD code with AI...")
 
     import src.core.ai.validation_loop as ai_call
-    from src.core.sessions import save_session_atomic, write_version_print_scripts
+    from src.core.sessions import save_session_atomic
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     short_uuid = uuid.uuid4().hex[:8]
@@ -150,13 +150,6 @@ def main(prompt_arg: str | None = None) -> int:
                 slice_info = get_slice_info_from_3mf(three_mf_file)
             except Exception:
                 pass
-
-        write_version_print_scripts(
-            v_dir,
-            stl_file,
-            requested_colors=colors,
-            enable_supports=False,
-        )
 
         session_data = {
             "id": session_id,

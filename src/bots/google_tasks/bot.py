@@ -25,7 +25,6 @@ from src.core.printer import BambuClient
 from src.core.sessions import (
     format_session_dir_name,
     save_session_atomic,
-    write_version_print_scripts,
 )
 
 SCOPES = ["https://www.googleapis.com/auth/tasks"]
@@ -340,16 +339,6 @@ def process_tasks(service, module=None):
                                 f"OpenSCAD compilation error: {err_output}",
                             )
                             continue
-
-                    try:
-                        write_version_print_scripts(
-                            v_dir,
-                            stl_file,
-                            requested_colors=colors,
-                            enable_supports=bool(get_supports_fn()),
-                        )
-                    except Exception:
-                        pass
 
                     session_data["versions"] = 1
                     session_data["latest_stl"] = (

@@ -1,0 +1,25 @@
+# Task List: Direct Python Print & Elimination of Batch Scripts
+
+- [x] **Task 1: Slicer & Manual Print Path Normalization** <!-- id: 1 -->
+  - [x] Normalize paths with `os.path.abspath` in `src/core/slicer/slicer_3mf.py` (`slice_stl_to_3mf`, `compile_and_slice`, `_can_reuse_existing_3mf`).
+  - [x] Add fast failure if `stl_file` does not exist prior to allocating temporary slice folders.
+  - [x] Add informative notice in `_can_reuse_existing_3mf` and `src/cli/manual_print.py` when re-slicing due to support configuration mismatch.
+  - [x] Normalize paths in `src/cli/manual_print.py` (`run_cli_print`, `run_interactive_print`).
+  - [x] Normalize paths in `src/core/slicer/openscad.py` (`compile_scad_to_stl`).
+- [x] **Task 2: Eliminate Batch Scripts in Backend & Sessions** <!-- id: 2 -->
+  - [x] Update `src/web/backend/routes/printer.py` to directly execute Python print runner (`[sys.executable, "-m", "src.cli.manual_print", ...]`) instead of generating or modifying `print.bat`.
+  - [x] Deprecate `_write_batch_scripts` in `src/web/backend/routes/sessions.py` and `write_version_print_scripts` in `src/core/sessions.py` to no-ops that purge legacy batch files.
+  - [x] Remove calls to `write_version_print_scripts` in `src/cli/simple_mode.py`, `src/bots/telegram/handlers_design.py`, and `src/bots/google_tasks/bot.py`.
+  - [x] Replace `start.bat` with `run.bat` as the single authoritative batch script in the entire repository.
+  - [x] Purge all legacy `print.bat` and `slice.bat` scripts across `outputs/sessions/`.
+- [x] **Task 3: Automated Unit & Regression Tests** <!-- id: 3 -->
+  - [x] Create `tests/test_slicer_relative_paths.py` verifying relative paths, direct Python launch, support mismatch notices, no batch script generation, and `run.bat` uniqueness.
+  - [x] Update existing tests in `tests/test_online_backend_flows.py`, `tests/unit/test_session_manager.py`, `tests/test_google_tasks_bot.py`, and `tests/test_plan_1a.py`.
+  - [x] Update `ai_docs/testing.md`, `ai_docs/readme.md`, and `README.md`.
+- [ ] **Task 4: Mandatory Quality Checks & Verification** <!-- id: 4 -->
+  - [x] Run `uv run ruff check .`
+  - [x] Run `uv run ruff format --check .`
+  - [ ] Run `uv run pytest tests/` (running)
+  - [x] Run `npm --prefix src/web/frontend run lint`
+  - [x] Run `npm --prefix src/web/frontend run test`
+  - [x] Create walkthrough documentation in `ai_docs/walkthroughs/direct_python_print_walkthrough.md`.
