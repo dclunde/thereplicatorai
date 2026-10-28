@@ -8,7 +8,7 @@ Thanks for your interest in contributing! This project is licensed under GPL-3.0
 - **Remove API keys, IP addresses, serial numbers and access codes** from anything you paste.
 
 ## Suggesting enhancements
-Describe the use case and expected behaviour. Check `antigravity_files/docs/` to see whether it already exists.
+Describe the use case and expected behaviour. Check `ai_docs/docs/` to see whether it already exists.
 
 ## Development setup
 
@@ -20,7 +20,7 @@ npm --prefix src/web/frontend install
 copy .env.example .env     # add at least one AI key
 ```
 
-Create a branch (`feature/<name>` or `fix/<name>`), keep changes focused, add docstrings to new code, and update the docs in `antigravity_files/docs/` when behaviour changes.
+Create a branch (`feature/<name>` or `fix/<name>`), keep changes focused, add docstrings to new code, and update the docs in `ai_docs/docs/` when behaviour changes.
 
 ## Project layout
 See [file_guide.md](../file_guide.md). In short: `src/core` (logic), `src/web` (FastAPI + React), `src/bots` (Telegram, Google Tasks), `src/cli`, `inputs/` (prompts and config), `tests/`.

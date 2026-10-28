@@ -21,21 +21,21 @@ outputs/             # 100% git-ignored runtime state
   snapshots/ tmp/ logs/
   .cache/            # node_env/, google_tasks_token.json
 tests/               # Pytest suite
-antigravity_files/   # Documentation (docs/, project_docs/, testing.md, file_guide.md)
+ai_docs/             # Documentation (docs/, project_docs/, testing.md, file_guide.md)
 ```
 
 ## Documentation
 
 | Doc | Topic |
 |---|---|
-| [01 System architecture](antigravity_files/docs/01_system_architecture.md) | Pipeline, modules, session storage |
-| [02 Multi-AI & agent loop](antigravity_files/docs/02_multi_ai_and_agent_loop.md) | Gemini / ChatGPT / Claude, validation loop |
-| [03 Web interface](antigravity_files/docs/03_web_interface_guide.md) | React UI and REST API |
-| [04 Telegram bot](antigravity_files/docs/04_telegram_bot_guide.md) | Remote design and printing |
-| [05 Google Tasks bot](antigravity_files/docs/05_google_tasks_bot_guide.md) | Autonomous print queue |
-| [06 Slicing & 3MF](antigravity_files/docs/06_slicing_and_3mf_pipeline.md) | OpenSCAD to sliced 3MF |
-| [07 Mesh validation](antigravity_files/docs/07_mesh_geometry_validation.md) | Floating parts, thin walls |
-| [08 Bambu & safety](antigravity_files/docs/08_bambu_and_safety_guide.md) | LAN/Cloud mode, safety |
+| [01 System architecture](ai_docs/docs/01_system_architecture.md) | Pipeline, modules, session storage |
+| [02 Multi-AI & agent loop](ai_docs/docs/02_multi_ai_and_agent_loop.md) | Gemini / ChatGPT / Claude, validation loop |
+| [03 Web interface](ai_docs/docs/03_web_interface_guide.md) | React UI and REST API |
+| [04 Telegram bot](ai_docs/docs/04_telegram_bot_guide.md) | Remote design and printing |
+| [05 Google Tasks bot](ai_docs/docs/05_google_tasks_bot_guide.md) | Autonomous print queue |
+| [06 Slicing & 3MF](ai_docs/docs/06_slicing_and_3mf_pipeline.md) | OpenSCAD to sliced 3MF |
+| [07 Mesh validation](ai_docs/docs/07_mesh_geometry_validation.md) | Floating parts, thin walls |
+| [08 Bambu & safety](ai_docs/docs/08_bambu_and_safety_guide.md) | LAN/Cloud mode, safety |
 
 No printer? The app still works in **Design & Download mode**: generate, preview and download STL/3MF files without Bambu credentials (see doc 08 for exactly what the code does today).
 
@@ -72,7 +72,7 @@ The interactive menu options are:
 - Active AI provider & model: `inputs/configs/ai_models.json`
 - Tool install paths: on first run `inputs/configs/system_config.json` is copied from `system_config.default.json`. Edit it freely if your OpenSCAD / slicer live elsewhere — it is git-ignored and never overwritten. You can also set `OPENSCAD_PATH` / `SLICER_PATH` environment variables, and choose a browser with `"browser"`.
 
-See [antigravity_files/project_docs/INSTALL.md](antigravity_files/project_docs/INSTALL.md) for detailed setup instructions.
+See [ai_docs/project_docs/INSTALL.md](ai_docs/project_docs/INSTALL.md) for detailed setup instructions.
 
 ## Code Quality & Testing
 
