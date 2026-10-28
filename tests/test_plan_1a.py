@@ -166,6 +166,7 @@ def test_inputs_reorganized(rel):
         "inputs/google_tasks_api.json",
         "inputs/google_tasks_token.json",
         "remote_version/antigravity_files",
+        "antigravity_files",
         "online_version",
         "remote_version",
     ],

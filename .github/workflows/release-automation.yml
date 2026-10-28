@@ -29,7 +29,7 @@ jobs:
 
       - name: Create Release Zip Package
         run: |
-          zip -r text_to_printer_${{ github.ref_name }}.zip src/ inputs/ scripts/ start.bat start.sh pyproject.toml uv.lock .env.example README.md antigravity_files/
+          zip -r text_to_printer_${{ github.ref_name }}.zip src/ inputs/ scripts/ start.bat start.sh pyproject.toml uv.lock .env.example README.md ai_docs/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

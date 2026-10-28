@@ -40,9 +40,9 @@ Directory layout and rules for the Text-to-Printer repository.
 - `systemd/`, `launchd/`: service templates (not officially supported yet).
 
 ## `tests/`
-Pytest suite (`uv run pytest tests/`). See `antigravity_files/testing.md`.
+Pytest suite (`uv run pytest tests/`). See `ai_docs/testing.md`.
 
-## `antigravity_files/` (documentation)
+## `ai_docs/` (documentation)
 - `docs/`: feature documentation (01 to 08).
 - `project_docs/`: `INSTALL.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `CODE_OF_CONDUCT.md`.
 - `api_reference/`: Bambu Lab Cloud API notes.
